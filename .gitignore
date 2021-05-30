@@ -1,0 +1,5 @@
+node_modules
+resource
+.env
+config.json
+private*.json
