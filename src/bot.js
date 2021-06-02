@@ -90,16 +90,11 @@ function voiceCommandListener(user, speaking, voiceConn) {
 
         switch (result) {
           case command.sampleMusic:
-            const replyDispatcher = voiceConn.play('resource/reply.mp3')
-            replyDispatcher.setVolume(200 / volumeRate)
-  
-            replyDispatcher.on('finish', () => {
-              console.log('sample music start')
-              setTimeout(() => {
-                musicDispatcher = voiceConn.play('resource/sample-music.mp3')
-                musicDispatcher.setVolume(volume / volumeRate)  
-              }, 1500);
-            })
+            playMusic(voiceConn, 'resource/sample-music.mp3')
+            break;
+
+          case command.darkSlayer:
+            playMusic(voiceConn, 'resource/darkslayer.mp3')
             break;
 
           case command.volumeUp:
@@ -144,4 +139,17 @@ function voiceCommandListener(user, speaking, voiceConn) {
 function dummyGreeting(connection) {
   const greetingDispatcher = connection.play('resource/reply.mp3')
   greetingDispatcher.setVolume(0)
+}
+
+function playMusic(connection, filePath) {
+  const replyDispatcher = connection.play('resource/reply.mp3')
+  replyDispatcher.setVolume(200 / volumeRate)
+
+  replyDispatcher.on('finish', () => {
+    console.log('music start')
+    setTimeout(() => {
+      musicDispatcher = connection.play(filePath)
+      musicDispatcher.setVolume(volume / volumeRate)  
+    }, 1500);
+  })
 }
