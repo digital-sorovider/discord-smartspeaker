@@ -120,7 +120,11 @@ function voiceCommandListener(user, speaking, voiceConn) {
             break;
 
           case command.bye:
-            voiceConn.disconnect()
+            const byeDispatcher = voiceConn.play('resource/bye.mp3')
+            byeDispatcher.setVolume(300 / volumeRate)
+            byeDispatcher.on('finish', () => {
+              voiceConn.disconnect()
+            })
             break;
         
           default:
