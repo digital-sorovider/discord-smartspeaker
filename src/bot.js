@@ -5,6 +5,7 @@ const Discord = require('discord.js');
 const speech = require('@google-cloud/speech');
 const speechClient = new speech.SpeechClient()
 const client = new Discord.Client();
+const dialogue = require('./dialogue')
 
 const command = config.bot.command
 
@@ -31,7 +32,7 @@ client.on('ready', async () => {
   voiceConn.on('speaking', async (user, speaking) => {
     if(!speaking) return
     console.log('speaking default')
-    voiceCommandListener(user, speaking, voiceConn) // ボイスコマンド判定・実行
+    voiceCommandListener(user, speaking, voiceConn, textCh) // ボイスコマンド判定・実行
   })
 
 });
@@ -59,14 +60,15 @@ client.on('message', async (message) => {
       break;
   
     default:
+      const response = await dialogue.dialogueResponse(content, message.member.nickname)
+      message.channel.send(response)
       break;
   }
 })
-
 client.login(env.BOT_TOKEN);
 
 // ボイスコマンド受信
-function voiceCommandListener(user, speaking, voiceConn) {
+function voiceCommandListener(user, speaking, voiceConn, textChannel = false) {
   const receiver = voiceConn.receiver
   const audioStream = receiver.createStream(user, { mode: 'pcm' }); // ユーザーの音声データ取得
 
@@ -141,6 +143,14 @@ function voiceCommandListener(user, speaking, voiceConn) {
             break;
         
           default:
+            const guild = user.client.guilds.cache.array()[0]
+            const member = guild.member(user)
+
+            const response = await dialogue.dialogueResponse(result, member.nickname)
+            // console.log(member.nickname, 'への返答: ' , response)
+            if(textChannel) {
+              textChannel.send(response)
+            }
             break;
         }
 

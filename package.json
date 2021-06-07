@@ -10,7 +10,8 @@
     "dotenv": "^10.0.0",
     "dotenv-json": "^1.0.0",
     "eslint": "^7.27.0",
-    "ffmpeg-static": "^4.3.0"
+    "ffmpeg-static": "^4.3.0",
+    "request": "^2.88.2"
   },
   "devDependencies": {},
   "scripts": {
