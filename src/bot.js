@@ -5,14 +5,15 @@ const Discord = require('discord.js');
 const speech = require('@google-cloud/speech');
 const speechClient = new speech.SpeechClient()
 const client = new Discord.Client();
-const dialogue = require('./dialogue')
+const { dialogueResponse, replyTTS } = require('./dialogue')
 
 const command = config.bot.command
 
-let lastTalk // ユーザーが最後に発言した内容を保持
+const lastTalk = {} // ユーザーが最後に発言した内容を保持する
 let volume = 80 // デフォルトボリューム
 const volumeRate = 1000 // ボリューム倍率
 let musicDispatcher // 音声再生オブジェクト
+let dialogueMode = false
 
 // BOT起動完了
 client.on('ready', async () => {
@@ -69,6 +70,9 @@ client.login(env.BOT_TOKEN);
 
 // ボイスコマンド受信
 function voiceCommandListener(user, speaking, voiceConn, textChannel = false) {
+  const [guild] = user.client.guilds.cache.array() // ユーザーが参加しているギルド
+  const member = guild.member(user) // 発言したユーザーの情報
+
   const receiver = voiceConn.receiver
   const audioStream = receiver.createStream(user, { mode: 'pcm' }); // ユーザーの音声データ取得
 
@@ -94,7 +98,7 @@ function voiceCommandListener(user, speaking, voiceConn, textChannel = false) {
 
       regexp = new RegExp('^' + command.prefix + '(.+$)')
       const prefixExists = result.match(regexp)
-      if (lastTalk === command.prefix || prefixExists) { // コマンドプレフィックスの有無判定
+      if ((lastTalk[user.id] && lastTalk[user.id] === command.prefix) || prefixExists) { // コマンドプレフィックスの有無判定
 
         if (prefixExists) {
           // ユーザーがコマンドとコマンドプレフィクスを同時に発言していた場合はコマンドプレフィックス部分の文字列を排除する
@@ -141,23 +145,31 @@ function voiceCommandListener(user, speaking, voiceConn, textChannel = false) {
               voiceConn.disconnect()
             })
             break;
+
+          // 雑談モード開始
+          case command.startDialogueMode:
+            dialogueMode = true
+            playGreeting(voiceConn)
+            break;
+
+          // 雑談モード停止
+          case command.stopDialogueMode:
+            dialogueMode = false
+            playGreeting(voiceConn)
+            break;
         
           default:
-            const guild = user.client.guilds.cache.array()[0]
-            const member = guild.member(user)
-
-            const response = await dialogue.dialogueResponse(result, member.nickname)
-            // console.log(member.nickname, 'への返答: ' , response)
-            if(textChannel) {
-              textChannel.send(response)
-            }
+            conversation(result, voiceConn, textChannel, member)
             break;
         }
 
       }
+      else if (dialogueMode){
+        conversation(result, voiceConn, textChannel, member)
+      }
 
       // 発言の保持
-      lastTalk = result
+      lastTalk[user.id] = result
       // textCh.send(result)
       console.log(result);
     });
@@ -174,8 +186,7 @@ function dummyGreeting(connection) {
 
 // 音楽ファイル再生
 function playMusic(connection, filePath) {
-  const replyDispatcher = connection.play('resource/reply.mp3')
-  replyDispatcher.setVolume(200 / volumeRate)
+  const replyDispatcher = playGreeting(connection)
 
   replyDispatcher.on('finish', () => {
     console.log('music start')
@@ -184,4 +195,21 @@ function playMusic(connection, filePath) {
       musicDispatcher.setVolume(volume / volumeRate)  
     }, 1500);
   })
+}
+
+
+function playGreeting(connection) {
+  const replyDispatcher = connection.play('resource/reply.mp3')
+  replyDispatcher.setVolume(200 / volumeRate)
+
+  return replyDispatcher
+}
+
+async function conversation(userRemark, voiceConnection, textChannel, member) {
+  const response = await dialogueResponse(userRemark, member.nickname)
+  // console.log(member.nickname, 'への返答: ' , response)
+  replyTTS(response, voiceConnection)
+  if(textChannel) {
+    textChannel.send(response)
+  }
 }

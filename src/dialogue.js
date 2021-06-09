@@ -2,6 +2,11 @@ require('dotenv').config()
 const env = process.env
 const config = require('../config.json')
 const request = require('request')
+const tts = require('@google-cloud/text-to-speech');
+const fs = require('fs');
+const util = require('util');
+const client = new tts.TextToSpeechClient();
+const  { Readable, Stream } = require('stream');
 
 const bot = config.bot
 
@@ -47,6 +52,37 @@ exports.dialogueResponse = async function (userRemark, username = null) {
   const utterance = choiceResponse.utterance
 
   return utterance
+}
+
+exports.replyTTS = async function(replyText, connection) {
+
+    const audioStream = new Readable({ read: () => {} });
+
+    // 声の設定情報
+    const request = {
+      input: {text: replyText},
+      voice: {
+        languageCode: 'ja-JP',
+        name: 'ja-JP-Wavenet-A'
+      },
+      audioConfig: {
+        audioEncoding: 'OGG_OPUS',
+        pitch: bot.voice.pitch,
+        speakingRate: bot.voice.speakingRate
+      },
+    };
+
+    const [response] = await client.synthesizeSpeech(request);
+
+    const audioContent = response.audioContent;
+
+    if (typeof audioContent === 'string') {
+      const decoded = new Uint8Array(Buffer.from(audioContent, 'base64').buffer);
+      return decoded;
+    }
+
+    audioStream.push(audioContent)
+    connection.play(audioStream);
 }
 
 
