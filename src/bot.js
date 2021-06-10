@@ -10,8 +10,7 @@ const { dialogueResponse, replyTTS } = require('./dialogue')
 const command = config.bot.command
 
 const lastTalk = {} // ユーザーが最後に発言した内容を保持する
-let volume = 80 // デフォルトボリューム
-const volumeRate = 1000 // ボリューム倍率
+let volume = 0.3 // デフォルトボリューム
 let musicDispatcher // 音声再生オブジェクト
 let dialogueMode = false
 
@@ -127,25 +126,24 @@ function voiceCommandListener(user, speaking, voiceConn, textChannel = false) {
           case command.volumeUp:
             if (!musicDispatcher) return
             console.log('volume up')
-            volume += 20
-            musicDispatcher.setVolume(volume / volumeRate)  
+            musicDispatcher.setVolume(volume += 0.2)  
             break;
 
           // 音量を下げる
           case command.volumeDown:
             if (!musicDispatcher) return
             console.log('volume down')
-            volume -= 20
+            volume -= 0.2
             if (volume < 0) {
               volume = 0
             }
-            musicDispatcher.setVolume(volume / volumeRate)  
+            musicDispatcher.setVolume(volume -= 0.2)  
             break;
 
           // ボイスチャンネルから退室
           case command.bye:
             const byeDispatcher = voiceConn.play('resource/bye.mp3')
-            byeDispatcher.setVolume(300 / volumeRate)
+            byeDispatcher.setVolume(0.7)
             byeDispatcher.on('finish', () => {
               voiceConn.disconnect()
             })
@@ -197,7 +195,7 @@ function playMusic(connection, filePath) {
     console.log('music start')
     setTimeout(() => {
       musicDispatcher = connection.play(filePath)
-      musicDispatcher.setVolume(volume / volumeRate)  
+      musicDispatcher.setVolume(volume)  
     }, 1500);
   })
 }
@@ -205,7 +203,7 @@ function playMusic(connection, filePath) {
 
 function playGreeting(connection) {
   const replyDispatcher = connection.play('resource/reply.mp3')
-  replyDispatcher.setVolume(200 / volumeRate)
+  replyDispatcher.setVolume(0.8)
 
   return replyDispatcher
 }

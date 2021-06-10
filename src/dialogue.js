@@ -82,7 +82,8 @@ exports.replyTTS = async function(replyText, connection) {
     }
 
     audioStream.push(audioContent)
-    connection.play(audioStream);
+    const audioDispatcher = connection.play(audioStream);
+    audioDispatcher.setVolume(bot.voice.volume)
 }
 
 
