@@ -33,7 +33,7 @@ client.on('ready', async () => {
   voiceConn.on('speaking', async (user, speaking) => {
     if(!speaking) return
     console.log('speaking default')
-    // voiceCommandListener(user, speaking, voiceConn, textCh) // ボイスコマンド判定・実行
+    voiceCommandListener(user, speaking, voiceConn, textCh) // ボイスコマンド判定・実行
   })
 
 });
