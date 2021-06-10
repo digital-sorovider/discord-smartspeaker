@@ -33,7 +33,7 @@ client.on('ready', async () => {
   voiceConn.on('speaking', async (user, speaking) => {
     if(!speaking) return
     console.log('speaking default')
-    voiceCommandListener(user, speaking, voiceConn, textCh) // ボイスコマンド判定・実行
+    // voiceCommandListener(user, speaking, voiceConn, textCh) // ボイスコマンド判定・実行
   })
 
 });
@@ -47,6 +47,11 @@ client.on('message', async (message) => {
 
     // comeコマンドを使用したユーザーのボイスチャンネルへ移動
     case /come/.test(content):
+      const existConn = message.guild.me.voice.connection
+      if(existConn) {
+        existConn.removeAllListeners()
+      }
+
       const voiceConn = await message.member.voice.channel.join()
       dummyGreeting(voiceConn)
       voiceConn.on('speaking', async (user, speaking) => {
