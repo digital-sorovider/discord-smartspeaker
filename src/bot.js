@@ -18,7 +18,7 @@ let dialogueMode = false
 client.on('ready', async () => {
   console.log('ready')
   const allCh = client.channels.cache.array() // サーバーの全チャンネル
-  
+
   const voiceCh = allCh.find(channel => channel.name === config.channel.voice)　// デフォルト設定のボイスチャンネル
   const textCh = allCh.find(channel => channel.name === config.channel.text) //　デフォルト設定のテキストチャンネル
 
@@ -30,7 +30,7 @@ client.on('ready', async () => {
 
   // ユーザーのボイス受信
   voiceConn.on('speaking', async (user, speaking) => {
-    if(!speaking) return
+    if (!speaking) return
     console.log('speaking default')
     voiceCommandListener(user, speaking, voiceConn, textCh) // ボイスコマンド判定・実行
   })
@@ -41,13 +41,13 @@ client.on('ready', async () => {
 client.on('message', async (message) => {
   const content = message.content
 
-  if(!content.match('!n')) return
+  if (!content.match('!n')) return
   switch (true) {
 
     // comeコマンドを使用したユーザーのボイスチャンネルへ移動
     case /come/.test(content):
       const existConn = message.guild.me.voice.connection
-      if(existConn) {
+      if (existConn) {
         existConn.removeAllListeners()
       }
 
@@ -63,7 +63,17 @@ client.on('message', async (message) => {
     case /bye/.test(content):
       message.guild.me.voice.channel.leave()
       break;
-  
+
+    // 指定テキストチャンネルへチャット送信
+    case /say/.test(content):
+      const [ , , channelName, ...texts ] = content.split(' ')
+      const text = texts.join(' ')
+      
+      const allCh = message.guild.channels.cache.array()
+      const textCh = allCh.find(channel => channel.name === channelName)
+      textCh.send(text)
+      break;
+
     default:
       const response = await dialogue.dialogueResponse(content, message.member.nickname)
       message.channel.send(response)
@@ -126,7 +136,7 @@ function voiceCommandListener(user, speaking, voiceConn, textChannel = false) {
           case command.volumeUp:
             if (!musicDispatcher) return
             console.log('volume up')
-            musicDispatcher.setVolume(volume += 0.2)  
+            musicDispatcher.setVolume(volume += 0.2)
             break;
 
           // 音量を下げる
@@ -137,7 +147,7 @@ function voiceCommandListener(user, speaking, voiceConn, textChannel = false) {
             if (volume < 0) {
               volume = 0
             }
-            musicDispatcher.setVolume(volume -= 0.2)  
+            musicDispatcher.setVolume(volume -= 0.2)
             break;
 
           // ボイスチャンネルから退室
@@ -160,14 +170,14 @@ function voiceCommandListener(user, speaking, voiceConn, textChannel = false) {
             dialogueMode = false
             playGreeting(voiceConn)
             break;
-        
+
           default:
             conversation(result, voiceConn, textChannel, member)
             break;
         }
 
       }
-      else if (dialogueMode){
+      else if (dialogueMode) {
         conversation(result, voiceConn, textChannel, member)
       }
 
@@ -195,7 +205,7 @@ function playMusic(connection, filePath) {
     console.log('music start')
     setTimeout(() => {
       musicDispatcher = connection.play(filePath)
-      musicDispatcher.setVolume(volume)  
+      musicDispatcher.setVolume(volume)
     }, 1500);
   })
 }
@@ -212,7 +222,7 @@ async function conversation(userRemark, voiceConnection, textChannel, member) {
   const response = await dialogueResponse(userRemark, member.nickname)
   // console.log(member.nickname, 'への返答: ' , response)
   replyTTS(response, voiceConnection)
-  if(textChannel) {
+  if (textChannel) {
     textChannel.send(response)
   }
 }
