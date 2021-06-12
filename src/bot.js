@@ -55,7 +55,7 @@ client.on('message', async (message) => {
       dummyGreeting(voiceConn)
       voiceConn.on('speaking', async (user, speaking) => {
         console.log('speaking come')
-        voiceCommandListener(user, speaking, voiceConn)
+        voiceCommandListener(user, speaking, voiceConn, message.channel)
       })
       break;
 
@@ -84,6 +84,7 @@ client.login(env.BOT_TOKEN);
 
 // ボイスコマンド受信
 function voiceCommandListener(user, speaking, voiceConn, textChannel = false) {
+  if (user.bot) return
   const [guild] = user.client.guilds.cache.array() // ユーザーが参加しているギルド
   const member = guild.member(user) // 発言したユーザーの情報
 
