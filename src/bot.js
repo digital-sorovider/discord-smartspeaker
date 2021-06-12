@@ -2,12 +2,12 @@ const config = require('../config.json')
 require('dotenv').config()
 const env = process.env
 const Discord = require('discord.js');
+const { dialogueResponse, replyTTS, textTalkResponse } = require('./dialogue')
 const speech = require('@google-cloud/speech');
 const speechClient = new speech.SpeechClient()
 const client = new Discord.Client();
-const { dialogueResponse, replyTTS } = require('./dialogue')
 
-const command = config.bot.command
+const { command } = config.bot
 
 const lastTalk = {} // ユーザーが最後に発言した内容を保持する
 let volume = 0.3 // デフォルトボリューム
@@ -39,46 +39,53 @@ client.on('ready', async () => {
 
 // チャットメッセージ受信
 client.on('message', async (message) => {
-  const content = message.content
+  if(message.author.bot) return
+  const { content, member, guild, channel } = message
 
-  if (!content.match('!n')) return
-  switch (true) {
+  if (content.match('!n')) {
 
-    // comeコマンドを使用したユーザーのボイスチャンネルへ移動
-    case /come/.test(content):
-      const existConn = message.guild.me.voice.connection
-      if (existConn) {
-        existConn.removeAllListeners()
-      }
-
-      const voiceConn = await message.member.voice.channel.join()
-      dummyGreeting(voiceConn)
-      voiceConn.on('speaking', async (user, speaking) => {
-        console.log('speaking come')
-        voiceCommandListener(user, speaking, voiceConn, message.channel)
-      })
-      break;
-
-    // ボイスチャンネルから退出
-    case /bye/.test(content):
-      message.guild.me.voice.channel.leave()
-      break;
-
-    // 指定テキストチャンネルへチャット送信
-    case /say/.test(content):
-      const [ , , channelName, ...texts ] = content.split(' ')
-      const text = texts.join(' ')
-      
-      const allCh = message.guild.channels.cache.array()
-      const textCh = allCh.find(channel => channel.name === channelName)
-      textCh.send(text)
-      break;
-
-    default:
-      const response = await dialogue.dialogueResponse(content, message.member.nickname)
-      message.channel.send(response)
-      break;
+    switch (true) {
+  
+      // comeコマンドを使用したユーザーのボイスチャンネルへ移動
+      case /come/.test(content):
+        const { connection:existConn } = guild.me.voice
+        if (existConn) {
+          existConn.removeAllListeners()
+        }
+  
+        const voiceConn = await member.voice.channel.join()
+        dummyGreeting(voiceConn)
+        voiceConn.on('speaking', async (user, speaking) => {
+          console.log('speaking come')
+          voiceCommandListener(user, speaking, voiceConn, channel)
+        })
+        break;
+  
+      // ボイスチャンネルから退出
+      case /bye/.test(content):
+        message.guild.me.voice.channel.leave()
+        break;
+  
+      // 指定テキストチャンネルへチャット送信
+      case /say/.test(content):
+        const [ , , channelName, ...texts ] = content.split(' ')
+        const text = texts.join(' ')
+        
+        const allCh = guild.channels.cache.array()
+        const textCh = allCh.find(channel => channel.name === channelName)
+        textCh.send(text)
+        break;
+  
+      default:
+        const response = await dialogue.dialogueResponse(content, member.nickname)
+        channel.send(response)
+        break;
+    }
   }
+  else if(!member.user.bot) {
+    await textTalkResponse(content, message)
+  }
+
 })
 client.login(env.BOT_TOKEN);
 
