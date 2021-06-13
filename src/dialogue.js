@@ -3,10 +3,9 @@ const env = process.env
 const config = require('../config.json')
 const request = require('request')
 const tts = require('@google-cloud/text-to-speech');
-const fs = require('fs');
-const util = require('util');
 const client = new tts.TextToSpeechClient();
-const  { Readable, Stream } = require('stream');
+const  { Readable } = require('stream');
+require('discord-reply');
 
 const bot = config.bot
 
@@ -30,7 +29,7 @@ exports.dialogueResponse = async function (userRemark, username = null) {
     request.body.username = username
   }
 
-  const result = JSON.parse(await doPost(request))
+  const result = await doPost(request)
 
   let choiceResponse
   
@@ -87,11 +86,43 @@ exports.replyTTS = async function(replyText, connection) {
 }
 
 
+exports.textTalkResponse = async function(userRemark, message) {
+  const { channel } = message
+  if (env.OBSERV_TEXT_CHANNEL !== channel.name) return
+  const endpoint = 'https://api.a3rt.recruit-tech.co.jp/talk/v1/smalltalk'
+
+  const request = {
+    uri: endpoint,
+    headers: {'Content-type': 'application/json'},
+    form: {
+      apikey: env.TALKAPI_KEY,
+      query: userRemark
+    },
+  }
+
+  const response = await doPost(request)
+
+if(!response.results) return
+
+  const [ result ] = response.results
+
+  setTimeout(() => {
+    channel.startTyping()
+  }, 1000);
+
+  setTimeout(() => {
+    channel.stopTyping()
+    message.lineReply(result.reply)
+  }, 4000);
+
+
+}
+
 function doPost(options) {
   return new Promise(function (resolve, reject) {
     request.post(options, function(err, req, data){
       if(!err) {
-        resolve(data)
+        resolve(JSON.parse(data))
       }
       else {
         reject(err)
