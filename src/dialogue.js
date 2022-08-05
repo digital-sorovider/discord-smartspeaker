@@ -9,7 +9,7 @@ require('discord-reply');
 
 const bot = config.bot
 
-const URL = `https://www.chaplus.jp/v1/chat?apikey=${env.CHAPLUS_APIKEY}`
+const URL = `https://api-mebo.dev/api`
 
 exports.dialogueResponse = async function (userRemark, username = null) {
   const request = {
@@ -17,11 +17,9 @@ exports.dialogueResponse = async function (userRemark, username = null) {
     headers: {'Content-type': 'application/json'},
     body: JSON.stringify({
       utterance: userRemark,
-      agentState:{
-        agentName: bot.name,
-        tone: bot.voice.tone,
-        age: bot.voice.older
-      }
+      agent_id: env.AGENT_ID,
+      api_key: env.CONVERSATION_AI_APIKEY,
+      uid: username,
     }),
   }
 
@@ -29,28 +27,12 @@ exports.dialogueResponse = async function (userRemark, username = null) {
     request.body.username = username
   }
 
+  console.log('start reqest')
   const result = await doPost(request)
+  console.log('got reqest')
+  console.log(result)
 
-  let choiceResponse
-  
-  if (result.responses.length > 0){
-    const passResponses = result.responses.filter(response => response.score >= bot.voice.accuracy)
-    
-    if (passResponses.length > 0) {
-      choiceResponse = passResponses[Math.floor(Math.random() * passResponses.length)]
-    }
-    else {
-      choiceResponse = result.responses[Math.floor(Math.random() * result.responses.length)]
-    }
-  }
-  else {
-    console.log('no response')
-    return false
-  }
-
-  const utterance = choiceResponse.utterance
-
-  return utterance
+  return result.bestResponse.utterance
 }
 
 exports.replyTTS = async function(replyText, connection) {
