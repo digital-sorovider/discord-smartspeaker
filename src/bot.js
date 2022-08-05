@@ -186,6 +186,7 @@ function voiceCommandListener(user, speaking, voiceConn, textChannel = false) {
 
       }
       else if (dialogueMode) {
+        console.log('会話モード中')
         conversation(result, voiceConn, textChannel, member)
       }
 
@@ -227,8 +228,8 @@ function playGreeting(connection) {
 }
 
 async function conversation(userRemark, voiceConnection, textChannel, member) {
-  const response = await dialogueResponse(userRemark, member.nickname)
-  // console.log(member.nickname, 'への返答: ' , response)
+  const response = await dialogueResponse(userRemark, member.user.id)
+  // console.log(member.user.id, 'への返答: ' , response)
   replyTTS(response, voiceConnection)
   if (textChannel) {
     textChannel.send(response)
